@@ -1,0 +1,91 @@
+#!/bin/bash
+# Run this script to configure multiple monitors in bspwm.
+# This script searches for available configurations and apply the first setup
+# that matches to the current connected monitors.
+#
+# You can add an argument, e.g. './multimon my_setup' to apply a specific
+# setup, even if is's not matching all connected monitors.
+#
+# The script has also polybar support, to apply bars on each connected monitor.
+
+# Check if bspwm is running. Required for the setup.
+if ! pgrep bspwm > /dev/null; then
+    echo "No bspwm instance found. Aboring!"
+    exit
+fi
+
+# If the deamon is not instanciate, create it.
+if ! pgrep multimond > /dev/null; then
+    exec "$HOME/.config/multimon/multimond" &
+fi
+
+CONFIG_FILE="$HOME/.config/multimon/setups/current"
+DUMMY_MON_NAME="Dummy"
+
+source "$HOME/.config/multimon/tools/multimon_utils.sh"
+
+remove_monitor() {
+    mon_id="$1"
+    dummy_id="$2"
+   
+    # Add a dummy desktop named "Desktop" to remove all other desktops, because
+    # bspwm does not allow monitors without any desktop.
+    bspc monitor "$mon_id" -a "Desktop" &> /dev/null
+
+    # Move alle desktops to the dummy monitor
+    for desktop in $(bspc query -D -m "$mon_id" --names | grep -v "Desktop"); do
+        bspc desktop "$desktop" --to-monitor "$dummy_id" &> /dev/null
+    done
+
+    # Remove this monitor.
+    bspc monitor "$mon_id" --remove &> /dev/null
+}
+
+use_config="$1"
+if [[ -z "$use_config" ]]; then
+    source "$HOME/.config/multimon/tools/multimon_detection.sh"
+else
+    # Use the config file specified by the user.
+    source "$HOME/.config/multimon/tools/multimon_user_config.sh"
+fi
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "The config file does not exists or the symlink is broken."
+    exit
+fi
+
+# If using polybar, destroy all bars.
+# Avoids ugly artifacts in the polybar.
+if command -v polybar &> /dev/null; then
+    killall -q polybar
+    while pgrep -u $UID -x polybar; do sleep 1;done
+fi
+
+configured_mon_names="$(get_configured_monitors "$CONFIG_FILE")"
+
+# Create a dummy monitor. If the monitor already exists, do nothing.
+if [[ "$(bspc query -M --names | grep -w "$DUMMY_MON_NAME" | wc -l)" == 0 ]]; \
+then
+    bspc wm -a "$DUMMY_MON_NAME" "800x600+0+0"
+fi
+
+# Search for the dummy monitors id.
+dummy_id=$(bspc query -M -m "$DUMMY_MON_NAME") &> /dev/null
+
+# Remove all monitors (excluding the dummy) from bspwm
+all_mon_ids=$(bspc query -M | grep -v "$dummy_id") &> /dev/null
+for mon in $all_mon_ids; do
+    remove_monitor "$mon" "$dummy_id"
+done
+
+# Make xrandr configurations
+source "$HOME/.config/multimon/tools/multimon_x11.sh"
+configure_monitors "$CONFIG_FILE" 
+
+# Add monitors from configuration file.
+for mon in $configured_mon_names; do
+    cur_config=$(get_config_for_monitor "$CONFIG_FILE" "$mon")
+    geometry=$(echo "$cur_config" | grep "geometry" | sed 's/.*=//') \
+	    &> /dev/null
+    bspc wm -a "$mon" "$geometry" &> /dev/null
+done

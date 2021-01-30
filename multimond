@@ -1,0 +1,118 @@
+#!/bin/bash
+
+CONFIG_FILE="$HOME/.config/multimon/setups/current"
+DUMMY_MON_NAME="Dummy"
+
+source "$HOME/.config/multimon/tools/multimon_utils.sh"
+
+handle_monitor_add() {
+    bspwm_mon_ids=$(bspc query -M) &> /dev/null
+    
+    cur_mon_id="$1"
+    cur_mon_name="$2"
+
+    # Dummy monitor should not removed. 
+    if [[ "$cur_mon_name" == "$DUMMY_MON_NAME" ]]; then
+	# Only one dummy monitor is allowed.
+	if [[ "$(bspc query -M --names | grep "$DUMMY_MON_NAME" \
+		| wc -l)" > 1 ]]; then
+	    bspc monitor "$cur_mon_id" --remove &> /dev/null
+            echo "There can be only one dummy monitor '$DUMMY_MON_NAME'. \
+		    Removed!"	
+	fi	
+        return;
+    fi 
+    
+    # Check if monitor exists in the current setup.
+    # If not, remove it.
+
+    configured_mon_names="$(get_configured_monitors "$CONFIG_FILE")"
+    if [[ "$(echo "$configured_mon_names" | grep "$cur_mon_name" \
+	    | wc -l)" == 0 ]]; then
+        bspc monitor "$cur_mon_id" --remove > /dev/null
+	echo "Monitor $cur_mon_name is not configured. Removed!"
+	return;
+    fi
+
+    # Check if another monitor with this name already exists.
+    for mon in $(echo "$bspwm_mon_ids" | grep -wv "$cur_mon_id"); do
+        if [[ "$(bspc query -M -m "$mon" --names)" == "$cur_mon_name" ]]; then
+	    # Monitor already exists.
+	    bspc monitor "$cur_mon_id" --remove > /dev/null
+	    echo "Monitor already exists (id=$mon). Removed!"
+	    return;
+	fi
+    done
+  
+    # Monitor is not the dummy monitor.
+    # Monitor is not configured yet.
+    # Monitor has a configuration in the config file.
+    # The "Desktop" desktop is already added.
+
+    # Get the configuration for the current monitor. 
+    cur_config=$(get_config_for_monitor "$CONFIG_FILE" "$cur_mon_name") 
+
+    desktops=$(echo "$cur_config" | grep "desktops") > /dev/null
+    desktops=$(echo "${desktops#*=}" | sed "s/,/ /g")
+
+    # Check if desktops are configured for this monitor.
+    if [[ -z "$desktops" ]]; then
+        echo "No desktops to configure."
+	return;
+    fi
+
+    # Get the id of the generic desktop "Desktop" to remove it later.
+    generic_desktop=$(bspc query -D -m "$cur_mon_id") > /dev/null
+    echo "Desktops to configure: $desktops" 
+   
+    # Add the desktops from the dummy to this monitor.
+    for desktop in $desktops; do
+        bspc desktop "$desktop" --to-monitor "$cur_mon_id" > /dev/null
+    done
+
+    # Bspwm doesn't allow empty monitors.
+    # Delete the generic "Desktop" desktop form the monitor.
+    bspc desktop "$generic_desktop" --remove > /dev/null
+
+    # Check if the dummy monitor has only the generic "Desktop" desktop.
+    # If so, remove it.
+    if [[ "$(bspc query -D -m "$DUMMY_MON_NAME" --names \
+	    | grep -v "Desktop" | wc -l)" == 0 ]]; then
+        bspc monitor "$DUMMY_MON_NAME" --remove > /dev/null
+	echo "Dummy monitor was removed, because it's empty."
+
+        # If using polybar, launch a new instance on the monitor
+        if command -v polybar &> /dev/null; then
+            killall -q polybar
+
+	    while pgrep -u $UID -x polybar; do sleep 1; done
+            
+            mons=$(polybar --list-monitors | sed 's/:.*//g')
+	    for mon in $mons; do
+	        echo "Add polybar for monitor '$mon'."
+                if [[ -n $(polybar --list-monitors \
+			| grep -w "primary" | grep -w "$mon") ]]; then
+	            MONITOR="$mon" polybar --quiet --reload primary \
+		            -c $HOME/.config/polybar/config &
+	        else
+	            MONITOR="$mon" polybar --quiet --reload generic \
+		            -c $HOME/.config/polybar/config &
+	        fi
+	    done
+        fi
+    fi
+    
+}
+
+bspc subscribe monitor_add | while read line; do
+    event=$(awk '{ print $1 }' <<< "$line") > /dev/null
+    cur_mon_id=$(awk '{ print $2 }' <<< "$line") > /dev/null
+    cur_mon_name=$(awk '{ print $3 }' <<< "$line") > /dev/null
+
+    case "$event" in
+        "monitor_add")
+	    handle_monitor_add "$cur_mon_id" "$cur_mon_name"
+	    ;;
+    esac
+done
+

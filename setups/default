@@ -1,0 +1,14 @@
+[DisplayPort-1]
+device=27G2G5
+desktops=1,2,3,4,5
+geometry=1920x1080+0+0
+rotation=normal
+flags=
+
+[HDMI-A-1]
+device=MD20581
+desktops=6,7,8,9,10
+geometry=1920x1080+1920+0
+rotation=normal
+flags=primary
+
