@@ -1,3 +1,34 @@
+# This is a config file for multimon.
+# Square brackets ('[' and ']') defines a monitor output.
+# To configure a setup, that can be automatically detected, you'll need to
+# define a device for each output.
+# 
+# Each output has some attributes.
+# Some of them are required (marked with a leading *), some of them are optional
+#
+# device    - Defines the device, which is connected to this output.
+#             Run the ~/.config/multimon/tools/multimon_edid.sh file to detect,
+#             which devices connected currently with which output.
+#         
+# *desktops - The names of the desktop, defined by bspc, separated by a comma.
+#             To get all available desktops, run 'bspc query -D --names'.
+#             Make sure, your setup configuration files uses all available
+#             desktops to avoid data loss.
+#
+# *geometry - The geometry of the connected monitor in the format
+#             widthxheight+x_offset+y_offset
+#             e.g. (i) 1920x1080+0+0 and (ii) 1920x1080+1920+0
+#             In this example output (ii) is placed left to the output (i).
+#             If you use your monitor left/right rotated, define the output
+#             e.g. 1080x1920+0+0.
+#
+# *rotation - The rotation of the monitor. Valid values are
+#             normal | inverted | left | right.
+#
+# flags     - Additional flags separated by a comma.
+#             primary - Defines the primary, als known as 'main' monitor.
+#
+
 [DisplayPort-1]
 device=27G2G5
 desktops=1,2,3,4,5
