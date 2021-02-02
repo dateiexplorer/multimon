@@ -34,7 +34,6 @@ desktops=5,6,7,8,9,10
 geometry=1920x1080+1920+0
 rotation=normal
 flags=primary
-
 ```
 
 If the corresponding monitors are connected with it's outputs, this setup will
