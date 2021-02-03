@@ -1,10 +1,10 @@
 #!/bin/bash
 
 SETUP_HOME="$HOME/.config/multimon/setups"
-source "$HOME/.config/multimon/tools/multimon_utils.sh"
+source "$HOME/.config/multimon/utils/multimon_utils.sh"
 
 # Get current connected monitors and their edid
-cur_edids=$(source "$HOME/.config/multimon/tools/multimon_edid.sh")
+cur_edids=$(source "$HOME/.config/multimon/utils/multimon_edid.sh")
 
 # Get all available setups
 all_setups=$(ls "$SETUP_HOME" | grep -v "current")

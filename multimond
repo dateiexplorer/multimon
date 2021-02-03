@@ -3,7 +3,7 @@
 CONFIG_FILE="$HOME/.config/multimon/setups/current"
 DUMMY_MON_NAME="Dummy"
 
-source "$HOME/.config/multimon/tools/multimon_utils.sh"
+source "$HOME/.config/multimon/utils/multimon_utils.sh"
 
 handle_monitor_add() {
     bspwm_mon_ids=$(bspc query -M) &> /dev/null
@@ -82,24 +82,7 @@ handle_monitor_add() {
 	echo "Dummy monitor was removed, because it's empty."
 
         # If using polybar, launch a new instance on the monitor
-        if command -v polybar &> /dev/null; then
-            killall -q polybar
-
-	    while pgrep -u $UID -x polybar; do sleep 1; done
-            
-            mons=$(polybar --list-monitors | sed 's/:.*//g')
-	    for mon in $mons; do
-	        echo "Add polybar for monitor '$mon'."
-                if [[ -n $(polybar --list-monitors \
-			| grep -w "primary" | grep -w "$mon") ]]; then
-	            MONITOR="$mon" polybar --quiet --reload primary \
-		            -c $HOME/.config/polybar/config &
-	        else
-	            MONITOR="$mon" polybar --quiet --reload generic \
-		            -c $HOME/.config/polybar/config &
-	        fi
-	    done
-        fi
+        source "$HOME/.config/multimon/utils/multimon_polybar.sh" "$CONFIG_FILE"
     fi
     
 }

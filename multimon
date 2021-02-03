@@ -22,7 +22,7 @@ fi
 CONFIG_FILE="$HOME/.config/multimon/setups/current"
 DUMMY_MON_NAME="Dummy"
 
-source "$HOME/.config/multimon/tools/multimon_utils.sh"
+source "$HOME/.config/multimon/utils/multimon_utils.sh"
 
 remove_monitor() {
     mon_id="$1"
@@ -43,10 +43,10 @@ remove_monitor() {
 
 use_config="$1"
 if [[ -z "$use_config" ]]; then
-    source "$HOME/.config/multimon/tools/multimon_detection.sh"
+    source "$HOME/.config/multimon/utils/multimon_detection.sh"
 else
     # Use the config file specified by the user.
-    source "$HOME/.config/multimon/tools/multimon_user_config.sh"
+    source "$HOME/.config/multimon/utils/multimon_user_config.sh"
 fi
 
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -79,7 +79,7 @@ for mon in $all_mon_ids; do
 done
 
 # Make xrandr configurations
-source "$HOME/.config/multimon/tools/multimon_x11.sh"
+source "$HOME/.config/multimon/utils/multimon_x11.sh"
 configure_monitors "$CONFIG_FILE" 
 
 # Add monitors from configuration file.

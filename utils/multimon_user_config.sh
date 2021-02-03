@@ -2,7 +2,7 @@
 
 SETUP_HOME="$HOME/.config/multimon/setups"
 
-source "$HOME/.config/multimon/tools/multimon_utils.sh"
+source "$HOME/.config/multimon/utils/multimon_utils.sh"
 
 setup="$1"
 

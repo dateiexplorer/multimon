@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "$HOME/.config/multimon/tools/multimon_utils.sh"
+source "$HOME/.config/multimon/utils/multimon_utils.sh"
 
 apply_flag() {
     cur_mon="$1"
