@@ -1,0 +1,5 @@
+# Ignore swp files from vim
+*.swp
+
+# Ignore the symlink of current setup
+/setups/current
